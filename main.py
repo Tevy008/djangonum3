@@ -13,10 +13,10 @@ def check_for_redirect(response):
         raise requests.exceptions.HTTPError
 
 
-def download_txt(url, filename, folder="books/"):
-    if not os.path.exists(folder):
-        os.mkdir(folder)
-    response = requests.get(url)
+def download_txt(book_id, url, filename, folder="books/"):
+    os.makedirs(folder, exist_ok=True)
+    params = {"id": book_id}
+    response = requests.get(url, params=params)
     response.raise_for_status()
     check_for_redirect(response)
     filepath = os.path.join(f"{folder}{sanitize_filename(filename)}.txt")
@@ -42,19 +42,18 @@ def parse_book_page(response,book_url,):
         for element in comment_genres:
             genre = element.text
             genres.append(genre.strip())
-        book_date ={
+        information_about_book ={
             "title": title_book,
             "author": author,
             "image_url": full_url_img,
-            "genre": genre,
+            "genres": genres,
             "comments": comment,
         }
-        return book_date
+        return information_about_book
 
 
 def download_image(image_url,img_folder="images/",):
-    if not os.path.exists(img_folder):
-        os.makedirs(img_folder)
+    os.makedirs(img_folder, exist_ok=True)
     response = requests.get(image_url)
     response.raise_for_status()
     check_for_redirect(response)
@@ -74,17 +73,14 @@ def main():
             book_url =f'https://tululu.org/b{book_id}'
             response = requests.get(book_url)
             response.raise_for_status()
-            # check_for_redirect(response)
-            book_data = parse_book_page(response, book_url)
-            download_image(book_data["image_url"])
-            filename = f"{book_id}. {book_data['title'].strip()}"
-            url_book = f"https://tululu.org/txt.php?id={book_id}"
-            download_txt(url_book,filename)
+            information_of_book = parse_book_page(response, book_url)
+            download_image(information_of_book["image_url"])
+            filename = f"{book_id}. {information_of_book['title'].strip()}"
+            book_url = "https://tululu.org/txt.php"
+            download_txt(book_id, book_url, filename)
         except:
             print(f"Книга с ID {book_id} не найдена.")
 
 
 if __name__ == "__main__":
     main()
-
-
