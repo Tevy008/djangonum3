@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
 from urllib.parse import urljoin, unquote, urlsplit
 import os.path
+import time
 
 
 
@@ -38,18 +39,18 @@ def parse_book_page(response,book_url,):
             comment = element.find('span').text
             comments.append(comment.strip())
         genres = []
-        comment_genres = soup.find('span', class_='d_book').find_all("a")
-        for element in comment_genres:
+        types_genres = soup.find('span', class_='d_book').find_all("a")
+        for element in types_genres:
             genre = element.text
             genres.append(genre.strip())
-        information_about_book ={
+        book_parameters ={
             "title": title_book,
             "author": author,
             "image_url": full_url_img,
-            "genres": genres,
+            "genres": genres,                   
             "comments": comment,
         }
-        return information_about_book
+        return book_parameters
 
 
 def download_image(image_url,img_folder="images/",):
@@ -72,15 +73,18 @@ def main():
         try:
             book_url =f'https://tululu.org/b{book_id}'
             response = requests.get(book_url)
+            check_for_redirect(response)
             response.raise_for_status()
-            information_of_book = parse_book_page(response, book_url)
-            download_image(information_of_book["image_url"])
-            filename = f"{book_id}. {information_of_book['title'].strip()}"
+            params_books = parse_book_page(response, book_url)
+            download_image(params_books["image_url"])
+            filename = f"{book_id}. {params_books['title'].strip()}"
             book_url = "https://tululu.org/txt.php"
             download_txt(book_id, book_url, filename)
-        except:
+        except requests.exceptions.HTTPError:
             print(f"Книга с ID {book_id} не найдена.")
-
+        except requests.exceptions.ConnectionError:
+            print("Повтороное подключение...")
+            time.sleep(20)
 
 if __name__ == "__main__":
     main()
