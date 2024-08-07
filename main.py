@@ -14,7 +14,7 @@ def check_for_redirect(response):
         raise requests.exceptions.HTTPError
 
 
-def download_txt(book_id, url, filename, folder="books/"):
+def download_txt(url, book_id, filename, folder="books/"):
     os.makedirs(folder, exist_ok=True)
     params = {"id": book_id}
     response = requests.get(url, params=params)
@@ -26,17 +26,16 @@ def download_txt(book_id, url, filename, folder="books/"):
 
 
 
-def parse_book_page(response,book_url,):
+def parse_book_page(response, book_url):
         soup = BeautifulSoup(response.text, 'lxml')
-        title_tag = soup.find('h1')
-        title_text = title_tag.text
-        title_book,author = title_text.split(" :: ")
+        title_tag = soup.find('h1').text
+        title_book, author = title_tag.split(" :: ")
         url_img = soup.find('div', class_='bookimage').find("img")["src"]
         full_url_img = urljoin(book_url, url_img)
         comments = []
         comment_elements = soup.find_all('div', class_='texts')
         for element in comment_elements:
-            comment = element.find('span').text
+            comment = element.find('span', class_="black").text
             comments.append(comment.strip())
         genres = []
         types_genres = soup.find('span', class_='d_book').find_all("a")
@@ -48,7 +47,7 @@ def parse_book_page(response,book_url,):
             "author": author,
             "image_url": full_url_img,
             "genres": genres,                   
-            "comments": comment,
+            "comments": comments,
         }
         return book_parameters
 
@@ -69,22 +68,23 @@ def main():
     parser.add_argument("--start_id", type=int, help="ID первой книги", default= 1)
     parser.add_argument("--end_id", type=int, help="ID последней книги", default= 10 )
     args = parser.parse_args()
-    for book_id in range(args.start_id,args.end_id):
+    for book_id in range(args.start_id, args.end_id):
         try:
-            book_url =f'https://tululu.org/b{book_id}'
+            book_url =f'https://tululu.org/b{book_id}/'
             response = requests.get(book_url)
-            check_for_redirect(response)
             response.raise_for_status()
+            check_for_redirect(response)
             params_books = parse_book_page(response, book_url)
             download_image(params_books["image_url"])
             filename = f"{book_id}. {params_books['title'].strip()}"
             book_url = "https://tululu.org/txt.php"
-            download_txt(book_id, book_url, filename)
+            download_txt(book_url, book_id, filename)
         except requests.exceptions.HTTPError:
             print(f"Книга с ID {book_id} не найдена.")
         except requests.exceptions.ConnectionError:
             print("Повтороное подключение...")
             time.sleep(20)
+
 
 if __name__ == "__main__":
     main()
