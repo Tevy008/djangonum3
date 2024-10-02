@@ -14,7 +14,7 @@ def check_for_redirect(response):
         raise requests.exceptions.HTTPError
 
 
-def parse_tululu_category(start_page, end_page):
+def get_category_book_urls(start_page, end_page):
     bio_fantasy = []
     for number in range(start_page, end_page):
         url = f'https://tululu.org/l55/{number}'
@@ -97,7 +97,7 @@ def main():
     os.makedirs(for_txt, exist_ok=True)
 
     all_book_parameters = []   
-    for book_id, fantastic in enumerate(parse_tululu_category(args.start_page, args.end_page)):
+    for book_id, fantastic in enumerate(get_category_book_urls(args.start_page, args.end_page)):
         try:
             response = requests.get(fantastic)
             response.raise_for_status()
