@@ -20,6 +20,7 @@ def get_category_book_urls(start_page, end_page):
         url = f'https://tululu.org/l55/{number}'
         response = requests.get(url)
         response.raise_for_status()
+        check_for_redirect(response)
         soup = BeautifulSoup(response.text, 'lxml')
         selector = "table.d_book"
         books_card = soup.select(selector)
