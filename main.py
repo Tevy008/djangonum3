@@ -15,7 +15,7 @@ def check_for_redirect(response):
 
 
 def get_category_book_urls(start_page, end_page):
-    bio_fantasy = []
+    description_book = []
     for number in range(start_page, end_page):
         url = f'https://tululu.org/l55/{number}'
         response = requests.get(url)
@@ -26,8 +26,8 @@ def get_category_book_urls(start_page, end_page):
         for book_card in books_card:
             book_link = book_card.find('a')['href'] 
             full_book_link = urljoin(url, book_link)  
-            bio_fantasy.append(full_book_link)
-    return bio_fantasy 
+            description_book.append(full_book_link)
+    return description_book
 
 
 def download_txt(url, book_id, filename, folder="books/"):
