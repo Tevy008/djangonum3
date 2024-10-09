@@ -15,20 +15,26 @@ def check_for_redirect(response):
 
 
 def get_category_book_urls(start_page, end_page):
-    description_book = []
+    book_addresses = []
     for number in range(start_page, end_page):
-        url = f'https://tululu.org/l55/{number}'
-        response = requests.get(url)
-        response.raise_for_status()
-        check_for_redirect(response)
+        try:
+            url = f'https://tululu.org/l55/{number}'
+            response = requests.get(url)
+            response.raise_for_status()
+            check_for_redirect(response)
+        except requests.exceptions.HTTPError:
+            print(f"Книга не найдена.")
+        except requests.exceptions.ConnectionError:
+            print("Повтороное подключение...")
+            time.sleep(20)  
         soup = BeautifulSoup(response.text, 'lxml')
         selector = "table.d_book"
         books_card = soup.select(selector)
         for book_card in books_card:
             book_link = book_card.find('a')['href'] 
             full_book_link = urljoin(url, book_link)  
-            description_book.append(full_book_link)
-    return description_book
+            book_addresses.append(full_book_link)
+    return book_addresses
 
 
 def download_txt(url, book_id, filename, folder="books/"):
@@ -47,8 +53,8 @@ def parse_book_page(response, book_url):
         title_tag = soup.select_one("h1").text
         title_book, author = title_tag.split(" :: ")
         url_selector = "div.bookimage img"
-        url_img = soup.select_one(url_selector)["src"]
-        full_url_img = urljoin(book_url, url_img)
+        img_url = soup.select_one(url_selector)["src"]
+        full_url_img = urljoin(book_url, img_url)
         comments = []
         comment_selector = "div.texts"
         comment_elements = soup.select(comment_selector)
@@ -103,13 +109,13 @@ def main():
             response = requests.get(fantastic)
             response.raise_for_status()
             check_for_redirect(response)
-            params_books = parse_book_page(response, fantastic)
-            all_book_parameters.append(params_books)
+            book = parse_book_page(response, fantastic)
+            all_book_parameters.append(book)
 
             if not args.skip_imgs:                             
-                download_image(params_books["image_url"], img_folder=for_img)
+                download_image(book["image_url"], img_folder=for_img)
 
-            filename = f"{book_id}, {params_books['title'].strip()}"
+            filename = f"{book_id}, {book['title'].strip()}"
             book_url = "https://tululu.org/txt.php" 
 
             if not args.skip_txt:
@@ -119,7 +125,7 @@ def main():
             print(f"Книга с ID {book_id} не найдена.")
         except requests.exceptions.ConnectionError:
             print("Повтороное подключение...")
-            time.sleep(20)
+            time.sleep(20)  
     with open(f"{args.dest_folder}/data.json", "w", encoding='UTF-8') as json_file:
         json.dump(all_book_parameters, json_file, ensure_ascii=False)
 
