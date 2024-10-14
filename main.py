@@ -22,18 +22,18 @@ def get_category_book_urls(start_page, end_page):
             response = requests.get(url)
             response.raise_for_status()
             check_for_redirect(response)
+            time.sleep(20)  
+            soup = BeautifulSoup(response.text, 'lxml')
+            selector = "table.d_book"
+            books_card = soup.select(selector)
+            for book_card in books_card:
+                book_link = book_card.find('a')['href'] 
+                full_book_link = urljoin(url, book_link)  
+                book_addresses.append(full_book_link)
         except requests.exceptions.HTTPError:
             print(f"Книга не найдена.")
         except requests.exceptions.ConnectionError:
             print("Повтороное подключение...")
-            time.sleep(20)  
-        soup = BeautifulSoup(response.text, 'lxml')
-        selector = "table.d_book"
-        books_card = soup.select(selector)
-        for book_card in books_card:
-            book_link = book_card.find('a')['href'] 
-            full_book_link = urljoin(url, book_link)  
-            book_addresses.append(full_book_link)
     return book_addresses
 
 
